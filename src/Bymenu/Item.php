@@ -1,6 +1,6 @@
 <?php
 
-namespace Byscripts;
+namespace Bymenu;
 
 class Item
 {
