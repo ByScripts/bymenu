@@ -14,27 +14,21 @@ class Item
 	private $labelHtmlClass = array();
 	private $url;
 
-	public function __construct(Menu $menu, $label, $url = null, $id = null) {
+	public function __construct(Menu $menu, $id, $label, $url = null) {
 
 		$this->menu = $menu;
-
-		if(is_null($id)) {
-			$id = $this->getmenu()->getSlugifier()->slugify($label);
-		}
-
 		$this->id = $id;
 		$this->label = $label;
 		$this->url = $url;
+
+		$menu->addItem($this);
 	}
 
 	public function menu($id = null) {
 		
-		if(is_null($id)) {
-			$id = $this->id;
-		}
+		$id = is_null($id) ? $this->id : $id;
 
-		$this->subMenu = new Menu($id);
-		$this->subMenu->setParentItem($this);
+		$this->setSubMenu(new Menu($id));
 		
 		return $this->subMenu;
 	}
@@ -43,20 +37,25 @@ class Item
 		return $this->menu;
 	}
 
+	public function setSubMenu(Menu $subMenu) {
+		$this->subMenu = $subMenu;
+		$this->subMenu->setParentItem($this);
+	}
+
 	public function hasSubMenu() {
 		return $this->subMenu instanceof Menu;
 	}
 
-	public function item($label, $url = null, $id = null) {
-		return $this->menu->item($label, $url, $id);
+	public function item($id, $label, $url = null) {
+		return $this->menu->item($id, $label, $url);
 	}
 
 	public function end() {
 		return $this->menu->end();
 	}
 
-	public function getId() {
-		return $this->id;
+	public function getId($recursive = false) {
+		return !$recursive ? $this->id : $this->getMenu()->getId(true) . '-' . $this->id;
 	}
 
 	public function setHtmlId($id) {
@@ -65,12 +64,16 @@ class Item
 	}
 
 	public function getHtmlId() {
-		if(!is_null($this->htmlId)) {
-			return $this->htmlId;
-		}
-		else {
-			return $this->getId() . '-item';
-		}
+		return !is_null($this->htmlId) ? $this->htmlId : $this->getId(true) . '-item';
+	}
+
+	public function addHtmlClass($class) {
+		$this->htmlClass[$class] = true;
+		return $this;
+	}
+
+	public function getHtmlClass() {
+		return implode(' ', array_keys($this->htmlClass));
 	}
 
 	public function setLabelHtmlId($id) {
@@ -79,28 +82,16 @@ class Item
 	}
 
 	public function getLabelHtmlId() {
-		if(!is_null($this->labelHtmlId)) {
-			return $this->labelHtmlId;
-		}
-		else {
-			return $this->getId() . '-label';
-		}
+		return !is_null($this->labelHtmlId) ? $this->labelHtmlId : $this->getId(true) . '-label';
 	}
 
 	public function addLabelHtmlClass($class) {
 		$this->labelHtmlClass[$class] = true;
+		return $this;
 	}
 
 	public function getLabelHtmlClass() {
 		return implode(' ', array_keys($this->labelHtmlClass));
-	}
-
-	public function addHtmlClass($class) {
-		$this->htmlClass[$class] = true;
-	}
-
-	public function getHtmlClass() {
-		return implode(' ', array_keys($this->htmlClass));
 	}
 
 	public function setUrl($url) {
@@ -128,7 +119,7 @@ class Item
 		$labelTemplate = $this->hasUrl() ? $this->getMenu()->getLabelUrlTemplate() : $this->getMenu()->getLabelNoUrlTemplate();
 
 		$labelFrom = array('%id%', '%class%', '%url%', '%label%');
-		$labelTo = array($this->getLabelHtmlId(), $this->getLabelHtmlClass(), $this->getUrl(), $this->label);
+		$labelTo = array($this->getLabelHtmlId(true), $this->getLabelHtmlClass(), $this->getUrl(), $this->label);
 
 		$label = str_replace($labelFrom, $labelTo, $labelTemplate);
 
@@ -138,34 +129,8 @@ class Item
 		$itemTemplate = $this->getMenu()->getItemTemplate();
 
 		$itemFrom = array('%id%', '%class%', '%label%', '%url%', '%submenu%');
-		$itemTo = array($this->getHtmlId(), $this->getHtmlClass(), $label, $this->getUrl(), $this->renderSubMenu());
+		$itemTo = array($this->getHtmlId(true), $this->getHtmlClass(), $label, $this->getUrl(), $this->renderSubMenu());
 
 		return str_replace($itemFrom, $itemTo, $itemTemplate);
-		
-
-		
-
-		
-		// $output = '<li id="' . $this->getHtmlId() . '">';
-		
-		// $output .= '<' . $this->getLabelHtmlTag();
-		// $output .= ' class="item-label"';
-		// $output .= ' id="' . $this->getLabelHtmlId() . '"';
-		
-		// if($this->getLabelHtmlTag() == 'a') {
-		// 	$output .= ' href="' . $this->url . '"';
-		// }
-
-		// $output .= '>' . $this->label;
-
-		// $output .= '</' . $this->getLabelHtmlTag() . '>';
-
-		// if($this->hasSubMenu()) {
-		// 	$output .= $this->subMenu->render();
-		// }
-		
-		// $output .= '</li>';
-
-		//return $output;
 	}
 }

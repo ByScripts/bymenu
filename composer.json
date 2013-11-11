@@ -1,6 +1,6 @@
 {
     "name": "bymenu/bymenu",
-    "description": "Easily manage a multi-level menu with Php",
+    "description": "Easily manage a multi-level customizable menu with Php.",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -10,8 +10,7 @@
     	}
     ],
     "require": {
-        "php": ">= 5.3",
-        "kevinlebrun/slug.php": "1.0.*"
+        "php": ">= 5.3"
     },
     "autoload" : {
         "psr-0": { "Bymenu": "src/" }

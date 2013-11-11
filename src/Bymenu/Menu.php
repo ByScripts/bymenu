@@ -21,6 +21,12 @@ class Menu
 	private $templates = array(
 		'default' => array(
 			'menu' => '<ul id="%id%" class="%class%">%items%</ul>',
+			'item' => '<li class="%class%">%label%%submenu%</li>',
+			'labelUrl' => '<a class="%class%" href="%url%">%label%</a>',
+			'labelNoUrl' => '<span class="%class%">%label%</span>'
+			),
+		'complex' => array(
+			'menu' => '<ul id="%id%" class="%class%">%items%</ul>',
 			'item' => '<li id="%id%" class="%class%">%label%%submenu%</li>',
 			'labelUrl' => '<a id="%id%" class="%class%" href="%url%">%label%</a>',
 			'labelNoUrl' => '<span id="%id%" class="%class%">%label%</span>'
@@ -44,7 +50,7 @@ class Menu
 	 *
 	 * @param string $id The menu id
 	 */
-	public function __construct($id = 'bymenu') {
+	public function __construct($id) {
 		$this->id = $id;
 	}
 
@@ -157,26 +163,6 @@ class Menu
 	}
 
 	/**
-	 * Get the Slugifier instance
-	 *
-	 * @return Slugifier The Slufigier instance
-	 */
-	public function getSlugifier() {
-
-		if($this->hasParentItem()) {
-			return $this->getParentMenu()->getSlugifier();
-		}
-
-		if(is_null($this->slugifier)) {
-			$this->slugifier = new Slugifier();
-			$this->slugifier->setTransliterate(true);
-			$this->slugifier->setReplacements(array("/'/" => ''));
-		}
-
-		return $this->slugifier;
-	}
-
-	/**
 	 * Set the parent item
 	 *
 	 * @param Item $item The parent item
@@ -221,9 +207,14 @@ class Menu
 	 *
 	 * @return Item The item
 	 */
-	public function item($label, $url = null, $id = null) {
-		$item = new Item($this, $label, $url, $id);
-		return $this->items[$item->getId()] = $item;
+	public function item($id, $label, $url = null) {
+		$item = new Item($this, $id, $label, $url);
+		$this->addItem($item);
+		return $item;
+	}
+
+	public function addItem(Item $item) {
+		$this->items[$item->getId()] = $item;
 	}
 
 	/**
@@ -240,8 +231,13 @@ class Menu
 	 *
 	 * @return string Id of the menu
 	 */
-	public function getId() {
-		return $this->id;
+	public function getId($recursive = false) {
+		if(!$recursive || !$this->hasParentItem()) {
+			return $this->id;
+		}
+		else {
+			return $this->getParentMenu()->getId(true) . '-' . $this->id;
+		}
 	}
 
 	/**
@@ -261,7 +257,12 @@ class Menu
 	 * @return string HTML id of the menu
 	 */
 	public function getHtmlId() {
-		return !is_null($this->htmlId) ? $this->htmlId : $this->getId() . '-menu';
+		return !is_null($this->htmlId) ? $this->htmlId : $this->getId(true) . '-menu';
+	}
+
+	public function addHtmlClass($class) {
+		$this->htmlClass[$class] = true;
+		return $this;
 	}
 
 	/**
@@ -298,8 +299,8 @@ class Menu
 
 		$template = $this->getMenuTemplate();
 
-		$from = array('%id%', '%class%', '%items%');
-		$to = array($this->getHtmlId(), $this->getHtmlClass(), $this->renderItems());
+		$from = array('%id%', '%class%', '%items%', 'class=""');
+		$to = array($this->getHtmlId(), $this->getHtmlClass(), $this->renderItems(), '');
 		
 		return str_replace($from, $to, $template);
 	}
